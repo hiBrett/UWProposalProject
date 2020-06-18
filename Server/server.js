@@ -9,13 +9,10 @@ var app = express();
 var socketIO = require('socket.io');
 var serveStatic = require('serve-static')
 
-console.log("a");
 
 const server = http.createServer(function (req, res) {
-    res.send("hi");
+    res.send("");
 }).listen(process.env.PORT || 80);
-
-console.log("b process.env.PORT: " + process.env.PORT);
 
 const io = socketIO(server);
 
@@ -23,11 +20,7 @@ groupServer(1);
 groupServer(2);
 groupServer(3);
 
-console.log("c3345b2a");
-
 function groupServer(groupNum) {
-
-    console.log("d");
 
     let totalPlayersOnline = 0;
     let playerIDs = [];
@@ -60,8 +53,6 @@ function groupServer(groupNum) {
         let playerID = getNextPlayerID();
         playerIDs.push(playerID);
         playerIDToSocket[playerID] = socket;
-
-        console.log("aaa_2");
 
         socket.emit("FromAPI", "hi");
 
