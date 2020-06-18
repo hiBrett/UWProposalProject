@@ -1,0 +1,484 @@
+html * {
+    font-family: Coarse Rounded, sans-serif !important;
+}
+
+@font-face {
+    font-family: "Coarse Rounded";
+    src: url("./fonts/coarserounded.otf");
+}
+
+body {
+    width: 100%;
+    margin: 0;
+}
+
+.bg-orange {
+    background-color: #EE6F43;
+}
+
+.text-orange {
+    color: #EE6F43;
+}
+
+.text-black {
+    color: black;
+}
+
+.nav-separator {
+    font-family: Arial !important;
+    padding: 0px 5px;
+}
+
+.nav-items {
+    padding-right: 100px;
+    width: 500px;
+}
+
+.title:hover {
+    cursor: pointer;
+}
+
+.font-arial {
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.font-password {
+    font: small-caption;
+}
+
+.navbar {
+    padding-top: 30px !important;
+    font-size: 1.1em;
+    padding-right: 10% !important;
+    padding-left: 7% !important;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+    .navbar a:link {
+        color: black;
+    }
+
+    .navbar a:visited {
+        color: black;
+    }
+
+    .navbar a:hover {
+        color: black;
+    }
+
+    .navbar a:active {
+        color: black;
+    }
+
+    .navbar ul {
+        list-style-type: none;
+        margin: 0;
+        text-align: center;
+    }
+
+    .navbar li {
+        display: inline;
+    }
+
+        .navbar li:after {
+            content: "|";
+            font-family: Arial !important;
+            padding: 0px 15px;
+        }
+
+.navigationItem {
+    cursor: pointer;
+}
+
+.navigationItemWhite {
+    color: white;
+}
+
+.matchCardBG {
+    outline-style: solid;
+    outline-width: 2px;
+    outline-color: black;
+    display: inline-flex;
+    text-align: center;
+    justify-content: center;
+    position: relative;
+}
+
+.matchCardText {
+    display: block;
+    width: 90%;
+    overflow-wrap: break-word;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.matchCardCover {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 92%;
+    border-radius: 15px;
+    border-style: solid;
+    border-width: 4px;
+    border-color: black;
+}
+
+.matchCardCoverMoved {
+    animation-name: matchCardCoverMovedAnimation;
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes matchCardCoverMovedAnimation {
+    from {
+        transform: translateY(-50%);
+    }
+
+    to {
+        transform: translateY(-150%);
+    }
+}
+
+.matchCardCoverMovedBack {
+    animation-name: matchCardCoverMovedBackAnimation;
+    animation-duration: 0.4s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes matchCardCoverMovedBackAnimation {
+    from {
+        transform: translateY(-150%);
+    }
+
+    to {
+        transform: translateY(-50%);
+    }
+}
+
+.matchCardCoverDissolve {
+    animation-name: matchCardCoverDissolveAnimation;
+    animation-duration: 0.2s;
+    animation-fill-mode: forwards;
+    transform: translateY(-150%);
+    pointer-events: none;
+}
+
+@keyframes matchCardCoverDissolveAnimation {
+    from {
+        opacity: 1
+    }
+
+    to {
+        opacity: 0
+    }
+}
+
+.orangeBox {
+    border-color: #EE6F43;
+    border-style: solid;
+    border-width: 3px;
+    background-color: black;
+    text-align: center;
+    width: 130px;
+    height: 3.5em;
+    vertical-align: top;
+}
+
+    .orangeBox.large {
+        width: 180px;
+        height: 3.7em;
+    }
+
+
+.orangeBoxText {
+    color: #EE6F43;
+    position: relative;
+    display: block;
+    width: 90%;
+    text-align: center;
+    overflow-wrap: break-word;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: default;
+    font-size: 2em;
+}
+
+    .orangeBoxText.large {
+        font-size: 2.4em;
+        margin-top: 2px;
+    }
+
+.timertextHolder {
+    width: 120px;
+    height: 4em;
+    position: relative;
+    vertical-align: top;
+}
+
+.timertext {
+    font-size: 1.6em;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.gameResultPage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 5;
+}
+
+.gameResultPageTitle {
+    color: white;
+    font-size: 4em !important;
+    position: fixed;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.gameResultPageText {
+    font-size: 0.5em;
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.bg-black {
+    background-color: black;
+}
+
+.bg-dark-gray {
+    background-color: darkgray;
+}
+
+.SequentialStackContainer {
+    display: block;
+    width: 100%;
+    height: 50vh;
+    position: relative;
+    border-color: black;
+    border-style: solid;
+    border-width: 3px;
+    margin-top: 30px;
+}
+
+.SequentialStackItem {
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.x0 {
+    left: 0;
+}
+
+.x1 {
+    left: 5.555%;
+}
+
+.x2 {
+    left: 16.666%;
+}
+
+.x3 {
+    left: 27.777%;
+}
+
+.x4 {
+    left: 38.888%;
+}
+
+.x5 {
+    left: 49.999%;
+}
+
+.x6 {
+    left: 61.111%;
+}
+
+.x7 {
+    left: 72.222%;
+}
+
+.x8 {
+    left: 83.333%;
+}
+
+.x9 {
+    left: 94.444%;
+}
+
+.x10 {
+    left: 100%;
+}
+
+.y0 {
+    top: 0%;
+}
+
+.y1 {
+    top: 10%;
+}
+
+.y2 {
+    top: 30%;
+}
+
+.y3 {
+    top: 50%;
+}
+
+.y4 {
+    top: 70%;
+}
+
+.y5 {
+    top: 90%;
+}
+
+.y6 {
+    top: 100%;
+}
+
+.SequentialCircle {
+    border-radius: 50%;
+    width: 8%;
+    padding-top: 7.5%;
+    background-color: blue;
+    color: white;
+    border-color: black;
+    border-style: solid;
+    border-width: 3px;
+    cursor: pointer;
+}
+
+.SequentialCircleText {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2em;
+    font-weight: bold;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif !important;
+    cursor: pointer;
+    user-select: none;
+}
+
+.SequentialCircleStart {
+    color: black;
+    font-weight: inherit;
+    font-size: 1em;
+}
+
+.SequentialCircleRed {
+    background-color: #FF0000;
+}
+
+.SequentialCircleGreen {
+    background-color: #00FF32;
+}
+
+.playerCircle {
+    border-color: #494949;
+    border-radius: 50%;
+    border-width: 2px;
+    border-style: solid;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    transition: left 350ms linear, top 350ms linear, margin-top 350ms linear;
+    pointer-events: none;
+}
+
+    .playerCircle.first {
+        background-color: #FF01FF;
+        width: 3.9%;
+        padding-top: 3.5%;
+    }
+
+    .playerCircle.second {
+        background-color: #9900FF;
+        width: 4.8%;
+        padding-top: 4.4%;
+    }
+
+    .playerCircle.third {
+        background-color: #F1C331;
+        width: 5.7%;
+        padding-top: 5.3%;
+    }
+
+    .playerCircle.fourth {
+        background-color: #9FC6E8;
+        width: 6.6%;
+        padding-top: 6.2%;
+    }
+
+    .playerCircle.fifth {
+        background-color: #737373;
+        width: 7.5%;
+        padding-top: 7.1%;
+    }
+
+    .playerCircle.first.x0.y3, .playerCircle.first.x7.y3 {
+        margin-top: -1.8%;
+    }
+    .playerCircle.second.x0.y3, .playerCircle.second.x7.y3 {
+        margin-top: -1.4%;
+    }
+    .playerCircle.third.x0.y3, .playerCircle.third.x7.y3 {
+        margin-top: -0.9%;
+    }
+    .playerCircle.fourth.x0.y3, .playerCircle.fourth.x7.y3 {
+        margin-top: -0.5%;
+    }
+    .playerCircle.fifth.x0.y3, .playerCircle.fifth.x7.y3 {
+        margin-top: -0.2%;
+    }
+
+
+
+@media only screen and (max-width: 992px) {
+    .SequentialCircleText {
+        font-size: 1.5em;
+    }
+
+    .SequentialCircle {
+        width: 10.8%;
+        padding-top: 10.3%;
+    }
+    .playerCircle.first {
+        width: 5.3%;
+        padding-top: 4.8%;
+    }
+
+    .playerCircle.second {
+        width: 6.5%;
+        padding-top: 6%;
+    }
+
+    .playerCircle.third {
+        width: 7.7%;
+        padding-top: 7.2%;
+    }
+
+    .playerCircle.fourth {
+        width: 8.9%;
+        padding-top: 8.4%;
+    }
+
+    .playerCircle.fifth {
+        width: 10.1%;
+        padding-top: 9.6%;
+    }
+
+    .SequentialStackContainer{
+        width: 90vw;
+        left: 5vw;
+        position: absolute;
+    }
+}
