@@ -7,14 +7,14 @@ var finalhandler = require('finalhandler')
 var express = require('express');
 var app = express();
 var socketIO = require('socket.io');
-var serveStatic = require('serve-static')
-
+var serveStatic = require('serve-static');
 
 const server = http.createServer(function (req, res) {
-    res.send("");
 }).listen(process.env.PORT || 80);
 
 const io = socketIO(server);
+
+console.log("Updated 2");
 
 groupServer(1);
 groupServer(2);
@@ -27,25 +27,29 @@ function groupServer(groupNum) {
     let playerIDToSocket = {};
     let currentGamePlayerIDs = [];
     let whosTurn = 0;
-    let wordsOnLeft = [];
-    let wordsOnRight = [];
-    let batchWords = [];
-    let gameState = { "currentGame": "home" };
-    let sequentialStackGameLength = 60 * 5;
-    let batchGameLength = 60 * 5;
+    let gameState = {
+        "currentGame": "home",
+        "playerOrderPosition": 0
+    };
     let playerOrder = [];
-    let playerOrderPosition = 0;
     let gameEndedTimeout = null;
     let SequentialStack = "Sequential Stack";
     let MatchTheBatch = "Match The Batch";
 
-    let SequentialStackCurrentBlock = 0;
-    let TotalSequentialPlayerBlocks = 5;
-    let CorrectSequentialStackMoves = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20, 20, 20, 20];
-    let SequentialStackCurrentMove = 0;
+    let MatchTheBatchServer = require('./Games/MatchTheBatchServer.js')(
+        UpdatedGameState, getTimeRemaining, sendMessageToAll, NextPlayersTurn, mod, resetGamestate,
+        loadJSON, saveJSON, SequentialStack, MatchTheBatch, epochSeconds, shuffle,
+        gameState, playerIDToSocket, playerOrder, resetArray, showSuccessScreen,
+    );
+    let SequentialStackServer = require('./Games/SequentialStackServer.js')(
+        UpdatedGameState, getTimeRemaining, sendMessageToAll, NextPlayersTurn, mod, resetGamestate,
+        loadJSON, saveJSON, SequentialStack, MatchTheBatch, epochSeconds, shuffle,
+        gameState, playerIDToSocket, playerOrder, resetArray, showSuccessScreen,
+    );
 
+    let GameServers = [MatchTheBatchServer, SequentialStackServer];
 
-    console.log("of group-" + groupNum);
+    let CurrentGameServer;
 
     io.of("group-" + groupNum).on('connection', socket => {
         let loggedIn = false;
@@ -63,29 +67,26 @@ function groupServer(groupNum) {
             checkLogin(data, function (successfullyLoggedIn, retrievedIsAdmin, adminPassword, userPassword) {
                 loggedIn = successfullyLoggedIn;
                 isAdmin = retrievedIsAdmin;
-                console.log("loggedIn: " + loggedIn);
+                console.log("LoggedIn: " + loggedIn);
 
                 if (loggedIn) {
-                    if (isAdmin) {
-                        getSavedBatchWords(function (savedBatchWords) {
-                            console.log("emitting LoggedIn");
-                            socket.emit("LoggedIn", { isAdmin, adminPassword, userPassword, gameState, savedBatchWords });
 
-                            isAdmin = true;
+                    let LoggedInResponse = { isAdmin, gameState };
 
-                            totalPlayersOnline += 0;
-                            updatedTotalPlayersOnline();
+                    SequentialStackServer.PlayerLoggedIn(socket, playerID, isAdmin, LoggedInResponse, function () {
+                        MatchTheBatchServer.PlayerLoggedIn(socket, playerID, isAdmin, LoggedInResponse, function () {
+                            socket.emit("LoggedIn", LoggedInResponse);
                         });
-                    } else {
-                        console.log("emitting LoggedIn");
-                        socket.emit("LoggedIn", { isAdmin, gameState });
-                        isAdmin = false;
+                    });
 
+
+                    if (!isAdmin) {
                         totalPlayersOnline += 1;
                         updatedTotalPlayersOnline();
                     }
+
                 } else {
-                    console.log("emitting login failed");
+                    console.log("Emitting login failed");
                     socket.emit("LoginFailed");
                 }
             });
@@ -93,7 +94,7 @@ function groupServer(groupNum) {
         });
 
         socket.on("disconnect", function () {
-            console.log("user disconnected");
+            console.log("User disconnected");
 
             if (!isAdmin && loggedIn) {
                 totalPlayersOnline -= 1;
@@ -121,49 +122,10 @@ function groupServer(groupNum) {
 
         socket.on("startGame", function (data) {
             if (isAdmin) {
-                if (gameState.currentGame == SequentialStack) {
-                    StartPlayingSequentialStack();
+                if (CurrentGameServer.StartGame != null) {
+                    CurrentGameServer.StartGame();
                 }
             }
-        });
-
-        socket.on("startBatchWordGame", function (data) {
-            if (isAdmin) {
-                console.log("start batch data: " + data);
-                console.log(JSON.stringify(data));
-                let wordData = data.words;
-                saveBatchWords(wordData);
-                if (wordData != null) {
-                    let words = wordData.split(",");
-                    for (let i = 0; i < words.length; i++) {
-                        words[i] = words[i].trim();
-                    }
-                    if (words.length == 12) {
-                        batchWords = words;
-
-
-                        shuffle(batchWords);
-                        let batchWordsRightSide = JSON.parse(JSON.stringify(batchWords));
-
-                        shuffle(batchWordsRightSide);
-
-                        while (batchWordsRightSide.length > 0) {
-                            batchWords.push(batchWordsRightSide.pop());
-                        }
-
-                        StartPlayingMatchBatch();
-
-                    } else {
-                        socket.emit("ErrorSettingBatchWords");
-                    }
-                } else {
-                    socket.emit("ErrorSettingBatchWords");
-                }
-            }
-        });
-
-        socket.on("adminChoseMatchTheBatchWords", function (data) {
-            console.log("adminChoseMatchTheBatchWords: " + data.words);
         });
 
         socket.on("GameMove", function (data) {
@@ -171,25 +133,6 @@ function groupServer(groupNum) {
         });
 
     });
-
-
-    function saveBatchWords(words) {
-        saveJSON("batchWords", { words });
-    }
-
-    function getSavedBatchWords(returnFunction) {
-        loadJSON("batchWords", function (err, wordsHolder) {
-            if (err) {
-                returnFunction("");
-            } else {
-                let words = wordsHolder.words;
-                if (words.length == 0) {
-                    words = "";
-                }
-                returnFunction(words);
-            }
-        });
-    }
 
     function shuffle(a) {
         for (let i = a.length - 1; i > 0; i--) {
@@ -199,9 +142,24 @@ function groupServer(groupNum) {
         return a;
     }
 
-    const newLocal = "Sequential Stack";
+
+    function resetGamestate() {
+        // Taken from https://stackoverflow.com/questions/684575/how-to-quickly-clear-a-javascript-object
+
+        for (let member in gameState) delete gameState[member];
+
+        gameState.playerOrderPosition = 0;
+    }
+
+    function resetArray(arr) {
+        while (arr.length > 0) {
+            arr.pop();
+        }
+    }
+
     function PlayerGameMove(isAdmin, loggedIn, playerID, data) {
         if (isAdmin) {
+
             // The admin never plays
 
             playerIDToSocket[playerID].emit("AdminCantPlay");
@@ -209,51 +167,36 @@ function groupServer(groupNum) {
             return;
         }
 
-
-
-
-
         let alreadyMoved = true;
 
-        if (!playerOrder.includes(playerID)
-            && ((gameState.pickedA == null && gameState.pickedB == null))) {
-            playerOrder.splice(playerOrderPosition, 0, playerID);
+        if (playerOrder.includes(playerID)) {
             alreadyMoved = false;
         }
 
-        console.log("game move playerOrderPosition a1: " + playerOrderPosition + ", " + playerOrder.length + ", " + JSON.stringify(playerOrder));
-        playerOrderPosition = mod(playerOrderPosition, playerOrder.length);
-        console.log("game move playerOrderPosition b: " + playerOrderPosition);
+        if (alreadyMoved && CurrentGameServer.CanGoToNewPlayer()) {
+            playerOrder.splice(gameState.playerOrderPosition, 0, playerID);
+            alreadyMoved = false;
+        }
 
-        if ((playerOrder[playerOrderPosition] != playerID)
-            || ((gameState.pickedA != null || gameState.pickedB != null) && playerOrder[playerOrderPosition] != playerID)
-            || (gameState.pickedA == null && gameState.pickedB == null && alreadyMoved && playerOrder.length < totalPlayersOnline)) {
+        gameState.playerOrderPosition = mod(gameState.playerOrderPosition, playerOrder.length);
 
-            console.log("NotYourTurn gameState.currentGame: " + gameState.currentGame);
 
-            if (gameState.currentGame == MatchTheBatch) {
-                playerIDToSocket[playerID].emit("NotYourTurn");
-                console.log("emitting NotYourTurn");
-            } else if (gameState.currentGame == SequentialStack) {
-                sendMessageToAll("WrongMove");
-                console.log("emitting WrongMove");
-                SetupSequentialStack();
-            }
+        if ((playerOrder[gameState.playerOrderPosition] != playerID)
+            || CurrentGameServer.IsWrongOrder(playerOrder, gameState.playerOrderPosition, playerID, alreadyMoved)) {
 
+            CurrentGameServer.GameMoveWrongOrderNotification(playerID);
+
+            console.log("GameMoveWrongOrderNotification");
             return;
         }
 
 
         if (!gameState.CountdownActive) {
+            //Countdown starts after first move
+
             gameState.CountdownActive = true;
 
-            let gameLength = 0;
-            if (gameState.currentGame == SequentialStack) {
-                gameLength = sequentialStackGameLength;
-            }
-            if (gameState.currentGame == MatchTheBatch) {
-                gameLength = batchGameLength;
-            }
+            let gameLength = CurrentGameServer.GameLength;
 
             console.log("CountdownActive");
             gameState.timeOfGameEnd = (epochSeconds() + gameLength);
@@ -263,115 +206,14 @@ function groupServer(groupNum) {
 
         }
 
-        if (data.type == "revealWord") {
-            let index = data.index;
-            if (!gameState.revealed[index]
-                && ((gameState.pickedA == null && index < 12)
-                    || (gameState.pickedB == null && index >= 12))) {
-                if (index < 12) {
-                    gameState.pickedA = index;
-
-                    if (gameState.putBackA == index) {
-                        gameState.putBackA = null;
-                    }
-                } else {
-                    gameState.pickedB = index;
-
-                    if (gameState.putBackB == index) {
-                        gameState.putBackB = null;
-                    }
-                }
-
-                let waitTime = 2000;
-
-                if (gameState.pickedA != null && gameState.pickedB != null
-                    && gameState.batchWords[gameState.pickedA] == gameState.batchWords[gameState.pickedB]) {
-                    waitTime = 1000;
-                }
-
-                if (gameState.pickedA != null && gameState.pickedB != null) {
-                    NextPlayersTurn();
-                }
-
-                if (gameState.pickedA != null && gameState.pickedB != null) {
-                    setTimeout(function () {
-                        if (gameState.pickedA != null && gameState.pickedB != null) {
-                            if (gameState.batchWords[gameState.pickedA] != gameState.batchWords[gameState.pickedB]) {
-                                //Wrong guess
-
-                                gameState.putBackA = gameState.pickedA;
-                                gameState.putBackB = gameState.pickedB;
-                                gameState.pickedA = null;
-                                gameState.pickedB = null;
-                            } else {
-                                //Correct Guess
-                                gameState.score += 10;
-                                if (gameState.dissolveA != null) {
-                                    gameState.revealed[gameState.dissolveA] = true;
-                                }
-                                if (gameState.dissolveB != null) {
-                                    gameState.revealed[gameState.dissolveB] = true;
-                                }
-                                gameState.dissolveA = gameState.pickedA;
-                                gameState.dissolveB = gameState.pickedB;
-                                gameState.pickedA = null;
-                                gameState.pickedB = null;
-
-                                let totalRevealed = 0;
-                                for (let i = 0; i < 24; i++) {
-                                    if (gameState.revealed[i]) {
-                                        totalRevealed += 1;
-                                    }
-                                }
-                                if (totalRevealed == 22) {
-                                    showSuccessScreen();
-                                }
-
-                            }
-                            UpdatedGameState();
-                        }
-                    }, waitTime);
-                }
-
-                UpdatedGameState();
-            }
-        }
-
-        if (data.type == "SequentialStackMoveTo") {
-            if (CorrectSequentialStackMoves[SequentialStackCurrentMove] == data.index) {
-                gameState.blocks[SequentialStackCurrentBlock].index = data.index;
-
-                if (SequentialStackCurrentMove >= 19) {
-                    SequentialStackCurrentBlock = mod(SequentialStackCurrentBlock - 1, TotalSequentialPlayerBlocks);
-                } else {
-                    SequentialStackCurrentBlock = mod(SequentialStackCurrentBlock + 1, TotalSequentialPlayerBlocks);
-                }
-
-                SequentialStackCurrentMove += 1;
-
-                NextPlayersTurn();
-
-                UpdatedGameState();
-
-                if (SequentialStackCurrentMove == 24) {
-                    showSuccessScreen();
-                }
-
-            } else {
-                console.log("sending to all: WrongMove");
-                sendMessageToAll("WrongMove");
-                SetupSequentialStack();
-            }
-
-        }
-
+        CurrentGameServer.PlayerGameMove(data);
     }
 
     function showSuccessScreen() {
 
         gameState.successScreen = true;
         clearTimeout(gameEndedTimeout);
-        let totalSeconds = batchGameLength - getTimeRemaining();
+        let totalSeconds = CurrentGameServer.GameLength - getTimeRemaining();
 
         let minutes = Math.floor(totalSeconds / 60);
         let seconds = totalSeconds - minutes * 60;
@@ -396,7 +238,7 @@ function groupServer(groupNum) {
 
             setTimeout(
                 function () {
-                    gameState = {};
+                    resetGamestate();
                     gameState.currentGame = "Home";
                     UpdatedGameState();
                 }, 7000);
@@ -406,56 +248,7 @@ function groupServer(groupNum) {
     }
 
     function NextPlayersTurn() {
-        playerOrderPosition = playerOrderPosition + 1;
-    }
-
-    function StartPlayingSequentialStack() {
-        gameState = {};
-        gameState.currentGame = SequentialStack;
-        gameState.playing = true;
-        playerOrder = [];
-        gameState.timeOfGameEnd = (epochSeconds() + sequentialStackGameLength);
-        gameState.timeRemaining = getTimeRemaining();
-
-        SetupSequentialStack();
-    }
-
-    function SetupSequentialStack() {
-        console.log("SetupSequentialStack");
-        playerOrderPosition = playerOrder.length;
-
-        let blocks = [];
-        blocks.push({ "index": 0 });
-        blocks.push({ "index": 0 });
-        blocks.push({ "index": 0 });
-        blocks.push({ "index": 0 });
-        blocks.push({ "index": 0 });
-
-        SequentialStackCurrentBlock = 0;
-        SequentialStackCurrentMove = 0;
-
-        gameState.blocks = blocks;
-
-        UpdatedGameState();
-    }
-
-    function StartPlayingMatchBatch() {
-        gameState = {};
-        gameState.batchWords = batchWords;
-        gameState.currentGame = MatchTheBatch;
-        gameState.playing = true;
-        gameState.pickedA = null;
-        gameState.pickedB = null;
-        gameState.score = 0;
-        playerOrderPosition = 0;
-        playerOrder = [];
-        gameState.timeOfGameEnd = (epochSeconds() + batchGameLength);
-        gameState.timeRemaining = getTimeRemaining();
-        gameState.revealed = [];
-        for (let i = 0; i < 24; i++) {
-            gameState.revealed.push(false);
-        }
-        UpdatedGameState();
+        gameState.playerOrderPosition = gameState.playerOrderPosition + 1;
     }
 
     function timeoutAfter(seconds) {
@@ -469,7 +262,7 @@ function groupServer(groupNum) {
 
                 setTimeout(
                     function () {
-                        gameState = {};
+                        resetGamestate();
                         gameState.currentGame = "Home";
                         UpdatedGameState();
                     }, 5000);
@@ -488,11 +281,12 @@ function groupServer(groupNum) {
     }
 
     function UpdatedGameState() {
-        if (gameState.currentGame == "Match The Batch") {
-            gameState.timeRemaining = getTimeRemaining();
+        if (CurrentGameServer != null && CurrentGameServer.UpdatedGameState != null) {
+            CurrentGameServer.UpdatedGameState();
         }
 
         console.log("UpdatedGameState: " + JSON.stringify(gameState));
+
         sendMessageToAll("UpdatedGameState", { gameState });
     }
 
@@ -501,6 +295,15 @@ function groupServer(groupNum) {
         whosTurn = 0;
         gameState.playing = false;
         gameState.currentGame = newGame;
+        gameState.playerOrderPosition = 0;
+
+        if (newGame == SequentialStack) {
+            CurrentGameServer = SequentialStackServer;
+        }
+        else if (newGame == MatchTheBatch) {
+            CurrentGameServer = MatchTheBatchServer;
+        }
+
 
         UpdatedGameState();
         currentGamePlayerIDs = [];
@@ -532,6 +335,12 @@ function groupServer(groupNum) {
         removeFromArray(playerIDs, playerID);
         removeFromArray(currentGamePlayerIDs, playerID);
         removeFromArray(playerOrder, playerID);
+
+        for (let i = 0; i < GameServers.length; i++) {
+            if (GameServers[i].playerDisconnected != null) {
+                GameServers[i].playerDisconnected(playerID);
+            }
+        }
     }
 
     function removeFromArray(array, value) {
